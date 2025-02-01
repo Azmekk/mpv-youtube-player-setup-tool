@@ -194,12 +194,6 @@ func downloadDependency(dependency int) {
 	}
 }
 
-func clearConsole() {
-	cmd := exec.Command("cmd", "/c", "cls")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-}
-
 func main() {
 	getOrInstallDependencies()
 
@@ -230,7 +224,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
 		return
 	}
-	clearConsole()
 
 	trimmedPromptResult := strings.TrimSuffix(promptResult, "p")
 	formatArg := fmt.Sprintf("--ytdl-format=bestvideo[height<=%s]+bestaudio/best[height<=%s]", trimmedPromptResult, trimmedPromptResult)
