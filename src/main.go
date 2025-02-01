@@ -11,12 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/manifoldco/promptui"
 )
 
 const (
 	ytdlpEnum      = 1
 	mpvEnum        = 2
-	ytdlpLocalPath = "yt-dlp/yt-dlp.exe"
+	ytdlpLocalPath = "mpv/yt-dlp.exe"
 	mpvLocalPath   = "mpv/mpv.exe"
 
 	ytdlpDownloadUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
@@ -44,6 +46,10 @@ func extractMpv() error {
 
 		if !strings.HasPrefix(filePath, filepath.Clean(mpvExtractDir)+string(os.PathSeparator)) {
 			return fmt.Errorf("%s: illegal file path", filePath)
+		}
+
+		if f.FileInfo().Name() == "mpv.com" {
+			continue
 		}
 
 		if f.FileInfo().IsDir() {
@@ -94,16 +100,16 @@ func getOrInstallDependencies() error {
 	}
 
 	wg := sync.WaitGroup{}
-	ytDlpLocalPath := filepath.Join(exeDir, ytdlpLocalPath)
+	ytDLpPath := filepath.Join(exeDir, ytdlpLocalPath)
 
-	if _, err := os.Stat(ytDlpLocalPath); err == nil {
-		os.Setenv("PATH", fmt.Sprintf("%s;%s", filepath.Dir(ytDlpLocalPath), os.Getenv("PATH")))
-	} else if _, err := exec.LookPath("yt-dlp"); err != nil {
+	if _, err := os.Stat(ytDLpPath); err == nil {
+		os.Setenv("PATH", fmt.Sprintf("%s;%s", filepath.Dir(ytDLpPath), os.Getenv("PATH")))
+	} else if _, err := exec.LookPath("yt-dlp.exe"); err != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			downloadDependency(ytdlpEnum)
-			os.Setenv("PATH", fmt.Sprintf("%s;%s", filepath.Dir(ytDlpLocalPath), os.Getenv("PATH")))
+			os.Setenv("PATH", fmt.Sprintf("%s;%s", filepath.Dir(ytDLpPath), os.Getenv("PATH")))
 		}()
 	}
 
@@ -111,7 +117,7 @@ func getOrInstallDependencies() error {
 
 	if _, err := os.Stat(mpvLocalPath); err == nil {
 		os.Setenv("PATH", fmt.Sprintf("%s;%s", filepath.Dir(mpvLocalPath), os.Getenv("PATH")))
-	} else if _, err := exec.LookPath("mpv"); err != nil {
+	} else if _, err := exec.LookPath("mpv.exe"); err != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -175,11 +181,9 @@ func downloadDependency(dependency int) {
 
 	switch dependency {
 	case ytdlpEnum:
-		ytdlpDir := filepath.Join(exeDir, "yt-dlp")
-		ytdlpExe := filepath.Join(ytdlpDir, "yt-dlp.exe")
 
 		fmt.Println("Downloading yt-dlp, please wait...")
-		downloadFile(ytdlpDownloadUrl, ytdlpExe)
+		downloadFile(ytdlpDownloadUrl, ytdlpLocalPath)
 
 	case mpvEnum:
 		mpvDir := filepath.Join(exeDir, "mpv")
@@ -203,9 +207,24 @@ func main() {
 	fmt.Print("Enter video URL: ")
 	url, _ := reader.ReadString('\n')
 
+	prompt := promptui.Select{
+		Label: "Select quality to aim for",
+		Items: []string{"2160p", "1444p", "1080p", "720p", "480p", "360p", "240p", "144p"},
+	}
+
+	_, promptResult, err := prompt.Run()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return
+	}
+	clearConsole()
+
 	fmt.Println("Starting video playback. This might take a second...")
 
-	cmd := exec.Command("mpv", "--ytdl-format=best", url)
+	trimmedPromptResult := strings.TrimSuffix(promptResult, "p")
+	formatArg := fmt.Sprintf("--ytdl-format=bestvideo[height<=%s]+bestaudio/best[height<=%s]", trimmedPromptResult, trimmedPromptResult)
+	cmd := exec.Command("mpv.exe", formatArg, url)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
