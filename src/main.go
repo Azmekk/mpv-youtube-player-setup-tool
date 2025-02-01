@@ -119,7 +119,7 @@ func getOrInstallDependencies() error {
 			err := extractMpv()
 
 			if err != nil {
-				fmt.Println("Failed to extract mpv: %s", err)
+				fmt.Printf("Failed to extract mpv: %s\n", err)
 				return
 			}
 
