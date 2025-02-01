@@ -207,12 +207,24 @@ func main() {
 	fmt.Print("Enter video URL: ")
 	url, _ := reader.ReadString('\n')
 
-	prompt := promptui.Select{
+	qualityPrompt := promptui.Select{
 		Label: "Select quality to aim for",
 		Items: []string{"2160p", "1444p", "1080p", "720p", "480p", "360p", "240p", "144p"},
 	}
 
-	_, promptResult, err := prompt.Run()
+	_, promptResult, err := qualityPrompt.Run()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return
+	}
+
+	hwDecPrompt := promptui.Select{
+		Label: "Use hardware decoding?",
+		Items: []string{"Yes (Default)", "No (Only use in case of issues with playback)"},
+	}
+
+	_, hwDecPromptResult, err := hwDecPrompt.Run()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
@@ -220,12 +232,27 @@ func main() {
 	}
 	clearConsole()
 
-	fmt.Println("Starting video playback. This might take a second...")
-
 	trimmedPromptResult := strings.TrimSuffix(promptResult, "p")
 	formatArg := fmt.Sprintf("--ytdl-format=bestvideo[height<=%s]+bestaudio/best[height<=%s]", trimmedPromptResult, trimmedPromptResult)
-	cmd := exec.Command("mpv.exe", formatArg, url)
+
+	mpvArgs := []string{formatArg}
+
+	if strings.HasPrefix(hwDecPromptResult, "Yes") {
+		mpvArgs = append(mpvArgs, "--hwdec=auto")
+		fmt.Println("Starting video playback with hardware decoding on. This might take a second...")
+	} else {
+		fmt.Println("Starting video playback with hardware decoding off. This might take a second...")
+	}
+
+	mpvArgs = append(mpvArgs, url)
+
+	cmd := exec.Command("mpv.exe", mpvArgs...)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cmd.Run() failed with %s\n", err)
+	}
 }
