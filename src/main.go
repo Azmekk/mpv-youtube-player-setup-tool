@@ -89,7 +89,7 @@ func getOrInstallDependencies() error {
 	exeDir := filepath.Dir(exePath)
 
 	if err != nil {
-		fmt.Println("Failed to get current executable path")
+		fmt.Fprintln(os.Stderr, "Failed to get current executable path")
 		return err
 	}
 
@@ -119,7 +119,7 @@ func getOrInstallDependencies() error {
 			err := extractMpv()
 
 			if err != nil {
-				fmt.Printf("Failed to extract mpv: %s\n", err)
+				fmt.Fprintf(os.Stderr, "Failed to extract mpv: %s\n", err)
 				return
 			}
 
@@ -134,13 +134,13 @@ func getOrInstallDependencies() error {
 func downloadFile(url string, output string) {
 	err := os.MkdirAll(filepath.Dir(output), os.ModePerm)
 	if err != nil {
-		fmt.Println("Failed to create directories")
+		fmt.Fprintln(os.Stderr, "Failed to create directories")
 		return
 	}
 
 	out, err := os.Create(output)
 	if err != nil {
-		fmt.Println("Failed to create file")
+		fmt.Fprintln(os.Stderr, "Failed to create file")
 		return
 	}
 
@@ -148,7 +148,7 @@ func downloadFile(url string, output string) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Failed to get file")
+		fmt.Fprintln(os.Stderr, "Failed to get file")
 		return
 	}
 
@@ -156,7 +156,7 @@ func downloadFile(url string, output string) {
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		fmt.Println("Failed to write file")
+		fmt.Fprintln(os.Stderr, "Failed to write file")
 		return
 	}
 
@@ -167,7 +167,7 @@ func downloadDependency(dependency int) {
 	exePath, err := os.Executable()
 
 	if err != nil {
-		fmt.Println("Failed to get current executable path")
+		fmt.Fprintln(os.Stderr, "Failed to get current executable path")
 		return
 	}
 
